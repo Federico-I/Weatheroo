@@ -47,14 +47,14 @@ class App extends React.Component {
     if(this.state.location.length < 2) return this.setState({ weather: {} });
 
     try {
-      this.setState({ isLoading: false });
+      this.setState({ isLoading: true });
 
       // 1) Getting location (geocoding)
       const geoRes = await fetch(
     `https://geocoding-api.open-meteo.com/v1/search?name=${this.state.location}`
       );
       const geoData = await geoRes.json();
-      console.log(geoData);
+      // console.log(geoData);
 
       if (!geoData.results) throw new Error("Location not found");
 
@@ -65,7 +65,7 @@ class App extends React.Component {
     displayLocation: `${name} ${convertToFlag(country_code)}`,
       });
 
-      // 2) Getting actual weather
+      // 2) Getting weather data
       const weatherRes = await fetch(
     `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&timezone=${timezone}&daily=weathercode,temperature_2m_max,temperature_2m_min`
       );
@@ -100,11 +100,13 @@ class App extends React.Component {
     return( 
       <div className="app">
         <h1>Weatheroo</h1>
-        <Input location={this.location} onChangeLocation={this.setLocation}/>
+        <Input location={this.state.location} onChangeLocation={this.setLocation}/>
 
         {this.state.isLoading && <p className="loader">Loading...</p>}
 
-        {this.state.weather.weatherData && <Weather weather={this.state.weather} location={this.weather.displayLocation} />}
+        {this.state.weather.weathercode && 
+          <Weather weather={this.state.weather} location={this.state.displayLocation} 
+        />}
       </div>
   )};
 };
@@ -112,6 +114,7 @@ class App extends React.Component {
 export default App;
 
 class Input extends React.Component {
+
   render() {
     return(
       <div>
@@ -122,19 +125,26 @@ class Input extends React.Component {
 };
 
 class Weather extends React.Component {
-  componentWillUnmount() {
 
+  componentWillUnmount() {
+    console.log("Weather will unmount");
   };
 
   render() {
-    const { temperature_2m_max: max, temperature_2m_min: min, time:dates, watherCode: codes,} = this.props.weather;
+    const { temperature_2m_max: max, temperature_2m_min: min, time:dates, weathercode: codes,} = this.props.weather;
 
     return (
       <div>
         <h2>Weatheroo {this.props.location}</h2>
         <ul className="weather">
           {dates.map((date, i) => (
-            <Day date={date} max={max.at(i)} min={min.at(i)} code={codes.at(i)} key={date} isToday={i === 0}></Day>
+            <Day 
+              date={date} 
+              max={max.at(i)} 
+              min={min.at(i)} 
+              code={codes.at(i)} 
+              key={date} 
+              isToday={i === 0} />
           ))}
         </ul>
       </div>
@@ -151,7 +161,7 @@ class Day extends React.Component {
         <span>{getWeatherIcon(code)}</span>
         <p>{ isToday ? "Today" : formatDay(date)}</p>
         <p>
-          {Math.floor(min)}&deg; &mdash; {Math.ceil(max)}&deg;
+          {Math.floor(min)}&deg; &mdash; <strong>{Math.ceil(max)}&deg;</strong>
         </p>
       </li>
     )
